@@ -29,7 +29,9 @@
     "3":{
         "url": "http://www.ucsd.edu",
         "features": "all"
-        
+        },
+    "4":{
+        "url": "http://somead.com",
+        "features": "all"
     }
-
 }

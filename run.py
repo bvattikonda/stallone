@@ -20,14 +20,9 @@ import subprocess
 import sys
 import time
 import traceback
+import optparse
 
 # Installed
-try:
-    import argparse
-except ImportError:
-    print ("Please install python-argparse module:\n" +
-           "[sudo] apt-get install python-argparse")
-    sys.exit(1)
 try:
     from pyvirtualdisplay import Display
 except ImportError:
@@ -70,16 +65,16 @@ def setup_args():
                                    config.LOG_DIR)
     description = ('This script instruments a browser to collect information' +
                     ' about a web page.')
-    parser = argparse.ArgumentParser(
-                        description=description, 
-                        formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('-x', '--no-xvfb', action='store_true', 
+    usage = 'usage: %prog [options]'
+    parser = optparse.OptionParser(description = description, usage =
+            usage, version = '%prog 0.1')
+    parser.add_option('-x', '--no-xvfb', action='store_true', 
             default=False,
             help='Give this option to turn XVFB (X Virtual Frame Buffer) \n' + 
                  'off. It is useful for debugging. XVFB is enabled by \n' +
                  'default. Crawler uses XVFB default screen 0 and display:99.')
     # Output Directories
-    parser.add_argument('--screenshot-dir',
+    parser.add_option('--screenshot-dir',
             help='Base directory for storing screenshots. The crawler \n' + 
                  'determines the directory and filename based on this \n' +
                  'option combined with the "screenshot" specification in \n' +
@@ -125,10 +120,10 @@ def setup_args():
                  'user\'s responsibility to maintain unique url-ids for \n' +
                  'unique id->filename mappings.'
                 )
-    parser.add_argument('--dom-dir',  
+    parser.add_option('--dom-dir',  
             help='Directory for storing DOMs. Works like --screenshot-dir \n' +
                  'argument, except the file extensions are .html')
-    parser.add_argument('--visit-chain-dir', 
+    parser.add_option('--visit-chain-dir', 
             help='Directory for storing the visit chains. A visit chain \n' +
                  'consists of all the URLs in encountered in the visit, \n' +
                  'their headers, server addresses, dom files and \n' +
@@ -140,58 +135,54 @@ def setup_args():
                  'in the input files, then the files will be saved as their\n'+
                  ' md5.extension. If visit chains are not being saved, the \n'+
                  'mapping of feature:filename will be lost.')
-    parser.add_argument('-i', '--input-file', action='append',
+    parser.add_option('-i', '--input-file', action='append',
             help='Input file/directory containing URLs. Either specify \n'+
                  'any number of input files or a single input directory \n'+
                  'containing the input files. For example: \n' +
                  '    python run.py -i input1.json -i input2.json \n' +
                  'or \n' +
-                 '    python run.py -i /path/to/input/directory \n',
-            required=True)
-    parser.add_argument('-n', '--num_browser', type=int, 
+                 '    python run.py -i /path/to/input/directory \n')
+    parser.add_option('-n', '--num_browser', type=int, 
             help='Maximum number of browser instances to run in parallel. \n'+
                  'A single browser instance visits only a single URL at a \n'+
-                 'time.', 
-            required=True)
-    parser.add_argument('--ext-start-port', default=4000, type=int, 
+                 'time.')
+    parser.add_option('--ext-start-port', default=4000, type=int, 
             help='This script communicates with Firefox extension \n' +
                  'over TCP sockets. <num-browser> number of ports, \n' +
                  'starting from this one will be used, if Firefox is used.\n'+
                  'Default value is %(default)s.')
-    parser.add_argument('--restart-browser', action='store_true', 
+    parser.add_option('--restart-browser', action='store_true', 
             default=False,
             help='Giving this argument forces browser restart for every \n' +
                  'visit. While this will provide sanity, the browser \n' +
                  'typically takes up to 5 seconds to be set up so for \n' +
                  'efficiency, this option is disabled by default')
-    parser.add_argument('--version', action='version', version='Stallone 0.1',
-            help='displays the crawler version.')
-    parser.add_argument('-b', '--browser', choices=['Firefox'],
+    parser.add_option('-b', '--browser', choices=['Firefox'],
             help='browser to be used. Default: %(default)s', default='Firefox')
-    parser.add_argument('--proxy-file', 
+    parser.add_option('--proxy-file', 
             help='Proxy file contains lists of the form \n' +
             '[host, port, type]. See proxy_sample.json for example. The \n' +
             'crawler does not set up access to the proxy, that must be \n' +
             'done by the user. One can also directly specify proxy ip and\n' +
             'port in the input file, on a per-url basis, in which case \n' +
             'the input file options are given preference.')
-    parser.add_argument('--proxy-scheme', choices=['round-robin'], 
+    parser.add_option('--proxy-scheme', choices=['round-robin'], 
             default='round-robin', 
             help='If the proxy information is not specified in the input \n' +
             'for every URL, a general policy can be used. \n' + 
             'Default: %(default)s')
-    parser.add_argument('-v', '--verbosity', 
+    parser.add_option('-v', '--verbosity', 
             choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
             help='Anything at the log level and above will be logged. \n' +
             'CRITICAL > INFO. Default: %(default)s', default='WARNING')
-    parser.add_argument('--log-dir', default=default_log_dir,
+    parser.add_option('--log-dir', default=default_log_dir,
             help='Logs are stored in this directory. Default is \n' + 
             '%(default)s directory in current directory.')
-    parser.add_argument('--suppress-stdout', action='store_true', 
+    parser.add_option('--suppress-stdout', action='store_true', 
             default=False, 
             help="By default the logs are shown on stdout and sent to the \n"+
             "the log files. Use this option to suppress output on stdout.")
-    parser.add_argument('--tags-file', type=file, 
+    parser.add_option('--tags-file', 
             help="JSON file with dictionaries of tags:\n" +
             '{ \n' +
             '    "tag_name_1": { \n' +
@@ -205,18 +196,21 @@ def setup_args():
             'long as this argument is used, all pages will be tagged. \n' +
             'This includes URLs for which user has not requested DOMs for.')
     '''
-    parser.add_argument('-r', '--report-recipient', 
+    parser.add_option('-r', '--report-recipient', 
             help='Email address to send crawl summary. The summary is \n' +
             'also saved in the log folder.')
-    parser.add_argument('--proxy-url', help='Same as --proxy-file except the \
+    parser.add_option('--proxy-url', help='Same as --proxy-file except the \
             file will be fetched from the URL when the crawler reboots. This is\
             ideal if a service maintains a list of available proxies that is \
             refreshed frequently.')
-    parser.add_argument('-e', '--email_errors', help='Email the errors that \
+    parser.add_option('-e', '--email_errors', help='Email the errors that \
             cause the crawler to crash to this recipient. The crash summary is\
             also saved in log folder.')
     '''
-    return parser.parse_args()
+    (options, args) = parser.parse_args()
+    if options.tags_file:
+        options.tags_file = open(options.tags_file)
+    return options
 
 def setup_logging(args):
     """Sets up logging. The logger is stored in crawlglobs.logger.
