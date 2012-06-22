@@ -5,7 +5,7 @@
   <RDF:Description RDF:about="rdf:#$HFwCj2"
                    em:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
                    em:minVersion="3.0a1"
-                   em:maxVersion="12.0.*" />
+                   em:maxVersion="13.0.*" />
   <RDF:Description RDF:about="urn:mozilla:install-manifest"
                    em:id="trajlogger@cs.ucsd.edu"
                    em:name="Trajectory Logger"
