@@ -232,7 +232,6 @@ class FirefoxCrawlerProcess(CrawlerProcess):
             visit.append({'url': url, 'status_code': config.PAGE_TIMEOUT_ST})
         if self.extension_inst.page_error():
             visit.append({'url': url, 'status_code': config.FIREFOX_ERR_ST})
-        print self.extension_inst.headers()
         html = self.extension_inst.html()
         
         all_flag = False
